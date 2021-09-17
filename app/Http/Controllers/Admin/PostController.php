@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 use App\Post;
+use App\Tag;
 use App\Category;
 
 class PostController extends Controller
@@ -30,8 +31,9 @@ class PostController extends Controller
     public function create()
     {
         $categories = Category::all();
+        $tags = Tag::all();
 
-        return view('admin.posts.create', compact('categories'));
+        return view('admin.posts.create', compact('categories', 'tags'));
     }
 
     /**
@@ -69,6 +71,11 @@ class PostController extends Controller
         $newPost->fill($data);
         $newPost->save();
 
+        // gestione dei tag
+        if (isSet($data['tags'])) {
+            $newPost->tags()->attach($data['tags']);
+        }
+
         return redirect()->route('admin.posts.index');
     }
 
@@ -81,7 +88,8 @@ class PostController extends Controller
     public function show($slug)
     {
         $post = Post::where('slug', $slug)->first();
-        return view('admin.posts.show', compact('post'));
+        $tags = Tag::all();
+        return view('admin.posts.show', compact('post', 'tags'));
     }
 
     /**
@@ -93,8 +101,9 @@ class PostController extends Controller
     public function edit(Post $post)
     {
         $categories = Category::all();
+        $tags = Tag::all();
 
-        return view('admin.posts.edit', compact('post', 'categories'));
+        return view('admin.posts.edit', compact('post', 'categories', 'tags'));
     }
 
     /**
@@ -136,6 +145,11 @@ class PostController extends Controller
 
         $post->update($data);
 
+        // gestione dei tag
+        if (isSet($data['tags'])) {
+            $post->tags()->sync($data['tags']);
+        }
+
         return redirect()->route('admin.posts.index')->with('updated', 'Hai modificato con successo l\'elemento ' .$post->id);
     
     }
@@ -149,6 +163,7 @@ class PostController extends Controller
     public function destroy(Post $post)
     {
         $post->delete();
+        $post->tags()->detach();
 
         return redirect()->route('admin.posts.index')->with('deleted', 'Hai eliminato con successo l\'elemento ' .$post->id);
     }
